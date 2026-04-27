@@ -48,6 +48,11 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
     token = credentials.credentials
     try:
         secret = get_secret_key()
@@ -58,7 +63,6 @@ def get_current_user(
         user_id = UUID(str(sub))
     except (JWTError, ValueError):
         raise credentials_exception from None
-
     user = db.get(User, user_id)
     if user is None:
         raise credentials_exception
