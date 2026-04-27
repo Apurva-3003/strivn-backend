@@ -42,12 +42,14 @@ class TrainingModel:
     _RUN_FATIGUE_PER_LOAD = 0.14
     _RUN_FITNESS_DISTANCE_RPE = 0.035
     _RUN_FITNESS_PER_MINUTE = 0.04
-    _CAPACITY_DROP_PER_GAP = 0.35
 
-    # Check-in: recovery from sleep_score; capacity when fatigue is low
+    # Check-in: fatigue relief scales with computed sleep_score
     _CHECKIN_FATIGUE_RELIEF = 0.11
-    _CHECKIN_CAPACITY_LOW_FATIGUE = 0.22
-    _CHECKIN_LOW_FATIGUE_THRESHOLD = 45
+
+    @staticmethod
+    def _capacity_from_state(fitness: int, fatigue: int, sleep_score: int) -> int:
+        """Correlated capacity: high fatigue or low fitness pulls down; sleep supports."""
+        return _clamp(fitness - fatigue + sleep_score // 4)
 
     @staticmethod
     def update_from_run(
@@ -67,18 +69,14 @@ class TrainingModel:
 
         fitness = _clamp(int(current_metrics.fitness) + max(0, d_fitness))
         fatigue = _clamp(int(current_metrics.fatigue) + max(0, d_fatigue))
-        capacity = int(current_metrics.capacity)
-        sleep_score = int(current_metrics.sleep_score)
-
-        if fatigue > fitness:
-            gap = fatigue - fitness
-            capacity = _clamp(capacity - int(round(gap * TrainingModel._CAPACITY_DROP_PER_GAP)))
+        sleep_score = _clamp(int(current_metrics.sleep_score))
+        capacity = TrainingModel._capacity_from_state(fitness, fatigue, sleep_score)
 
         return TrainingMetrics(
             fitness=fitness,
             fatigue=fatigue,
             capacity=_clamp(capacity),
-            sleep_score=_clamp(sleep_score),
+            sleep_score=sleep_score,
         )
 
     @staticmethod
@@ -117,16 +115,12 @@ class TrainingModel:
         fatigue -= int(round(sleep_score * TrainingModel._CHECKIN_FATIGUE_RELIEF))
         fatigue = _clamp(fatigue)
 
-        capacity = int(current_metrics.capacity)
-        if fatigue < TrainingModel._CHECKIN_LOW_FATIGUE_THRESHOLD:
-            headroom = TrainingModel._CHECKIN_LOW_FATIGUE_THRESHOLD - fatigue
-            capacity = _clamp(
-                capacity + int(round(headroom * TrainingModel._CHECKIN_CAPACITY_LOW_FATIGUE))
-            )
+        fitness = _clamp(int(current_metrics.fitness))
+        capacity = TrainingModel._capacity_from_state(fitness, fatigue, sleep_score)
 
         return TrainingMetrics(
-            fitness=_clamp(int(current_metrics.fitness)),
+            fitness=fitness,
             fatigue=fatigue,
-            capacity=capacity,
-            sleep_score=sleep_score,
+            capacity=_clamp(capacity),
+            sleep_score=_clamp(sleep_score),
         )

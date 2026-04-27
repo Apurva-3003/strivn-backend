@@ -12,10 +12,10 @@ from app.database.models import MetricsHistory
 
 class _DefaultMetrics:
     __slots__ = ()
-    fitness = 0
-    fatigue = 0
-    capacity = 100
-    sleep_score = 50
+    fitness = 30
+    fatigue = 20
+    capacity = 60
+    sleep_score = 60
 
 
 def latest_metrics_readable(db: Session, user_id: UUID) -> MetricsHistory | _DefaultMetrics:
