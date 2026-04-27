@@ -15,7 +15,7 @@ from app.database.db import get_db
 from app.database.models import User
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 10080
 
 oauth2_scheme = HTTPBearer()
 
