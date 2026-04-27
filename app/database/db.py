@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 # PostgreSQL example: postgresql+psycopg://user:pass@localhost:5432/strivn
 # Local dev default: SQLite file in the backend working directory
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./strivn.db")
+# Railway uses postgres:// but SQLAlchemy needs postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
